@@ -234,12 +234,23 @@ export function convertClassToUI5Extend(
     }
   }
 
-  const extendAssign = th.buildExtendAssign({
-    NAME: classNameIdentifier,
-    SUPER: superClass, // Needs Identifier node
-    FQN: t.stringLiteral(getFullyQualifiedName(classInfo)),
-    OBJECT: t.objectExpression(extendProps),
-  });
+  let extendAssign;
+  if (classInfo) {
+    extendAssign = th.buildExtendAssignWithMD({
+      NAME: classNameIdentifier,
+      SUPER: superClass, // Needs Identifier node
+      FQN: t.stringLiteral(getFullyQualifiedName(classInfo)),
+      OBJECT: t.objectExpression(extendProps),
+      FN_META_IMPL: "MetadataObject",
+    });
+  } else {
+    extendAssign = th.buildExtendAssign({
+      NAME: classNameIdentifier,
+      SUPER: superClass, // Needs Identifier node
+      FQN: t.stringLiteral(getFullyQualifiedName(classInfo)),
+      OBJECT: t.objectExpression(extendProps),
+    });
+  }
 
   return [extendAssign, ...staticMembers];
 }
@@ -271,7 +282,9 @@ export function getClassInfo(path, node, parent, pluginOpts) {
 function getFileBaseNamespace(path, pluginOpts) {
   const opts = path.hub.file.opts;
   const filename = Path.resolve(opts.filename);
-  const sourceRoot = opts.sourceRoot || process.cwd();
+  const sourceRoot = opts.sourceRoot
+    ? Path.resolve(process.cwd(), opts.sourceRoot)
+    : process.cwd();
   if (filename.startsWith(sourceRoot)) {
     const filenameRelative = Path.relative(sourceRoot, filename);
     const { dir } = Path.parse(filenameRelative);
